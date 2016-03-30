@@ -1,0 +1,44 @@
+--- origsrc/llvm-3.5.2.src/Makefile.config.in	2014-07-16 11:50:34.000000000 -0500
++++ src/llvm-3.5.2.src/Makefile.config.in	2016-03-28 20:54:17.679722200 -0500
+@@ -103,7 +103,7 @@ PROJ_libdir     := $(PROJ_prefix)/lib
+ PROJ_datadir    := $(PROJ_prefix)/share
+ PROJ_docsdir    := $(PROJ_prefix)/docs/llvm
+ PROJ_etcdir     := $(PROJ_prefix)/etc/llvm
+-PROJ_includedir := $(PROJ_prefix)/include
++PROJ_includedir := $(PROJ_prefix)/include/llvm-$(LLVMVersion)
+ PROJ_infodir    := $(PROJ_prefix)/info
+ PROJ_mandir     := $(PROJ_prefix)/share/man
+ 
+--- origsrc/llvm-3.5.2.src/tools/llvm-config/llvm-config.cpp	2014-03-28 20:08:53.000000000 -0500
++++ src/llvm-3.5.2.src/tools/llvm-config/llvm-config.cpp	2016-03-28 20:54:17.685222900 -0500
+@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
+   std::string ActivePrefix, ActiveBinDir, ActiveIncludeDir, ActiveLibDir;
+   std::string ActiveIncludeOption;
+   if (IsInDevelopmentTree) {
+-    ActiveIncludeDir = std::string(LLVM_SRC_ROOT) + "/include";
++    ActiveIncludeDir = std::string(LLVM_SRC_ROOT) + "/include/llvm-" + PACKAGE_VERSION;
+     ActivePrefix = CurrentExecPrefix;
+ 
+     // CMake organizes the products differently than a normal prefix style
+@@ -258,10 +258,10 @@ int main(int argc, char **argv) {
+ 
+     // We need to include files from both the source and object trees.
+     ActiveIncludeOption = ("-I" + ActiveIncludeDir + " " +
+-                           "-I" + ActiveObjRoot + "/include");
++                           "-I" + ActiveObjRoot + "/include/llvm-" + PACKAGE_VERSION);
+   } else {
+     ActivePrefix = CurrentExecPrefix;
+-    ActiveIncludeDir = ActivePrefix + "/include";
++    ActiveIncludeDir = ActivePrefix + "/include/llvm-" + PACKAGE_VERSION;
+     ActiveBinDir = ActivePrefix + "/bin";
+     ActiveLibDir = ActivePrefix + "/lib";
+     ActiveIncludeOption = "-I" + ActiveIncludeDir;
+@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
+       } else if (Arg == "--system-libs") {
+         PrintSystemLibs = true;
+       } else if (Arg == "--libs") {
+-        PrintLibs = true;
++        OS << "-lLLVM-" << PACKAGE_VERSION << '\n';
+       } else if (Arg == "--libnames") {
+         PrintLibNames = true;
+       } else if (Arg == "--libfiles") {

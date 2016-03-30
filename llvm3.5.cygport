@@ -1,0 +1,63 @@
+NAME="llvm3.5"
+VERSION=3.5.2
+RELEASE=2
+CATEGORY="Libs"
+SUMMARY="LLVM bytecode interpreter and toolchain"
+DESCRIPTION="The LLVM Core libraries provide a modern source- and target-
+independent optimizer, along with code generation support for many popular CPUs
+(as well as some less common ones!) These libraries are built around a well
+specified code representation known as the LLVM intermediate representation."
+HOMEPAGE="http://www.llvm.org/"
+SRC_URI="http://www.llvm.org/releases/${VERSION}/llvm-${VERSION}.src.tar.xz"
+SRC_DIR="llvm-${VERSION}.src"
+PATCH_URI="
+	3.5.2-llvm-config.patch
+	3.4.2-cygwin-implib.patch
+	3.5.1-cmodel-medium.patch
+"
+
+PKG_NAMES="libllvm3.5 libllvm3.5-devel"
+libllvm3_5_SUMMARY="LLVM library (runtime)"
+libllvm3_5_CONTENTS="
+	usr/bin/cygLLVM-3.5.dll
+	usr/share/doc/${NAME}/
+"
+libllvm3_5_devel_SUMMARY="LLVM library (development)"
+libllvm3_5_devel_CONTENTS="
+	usr/bin/llvm-config-3.5.exe
+	usr/bin/llvm-tblgen-3.5.exe
+	usr/include/llvm-${VERSION}/
+	usr/lib/libLLVM-3.5*.dll.a
+"
+
+src_compile() {
+	# leave optimization to build system, fails to dlopen with -O2
+	CFLAGS=${CFLAGS/-O[0-9]/}
+	CXXFLAGS=${CXXFLAGS/-O[0-9]/}
+
+	cd ${B}
+	# build system does NOT honour --includedir
+	cygconf --disable-assertions --enable-optimized --enable-debug-runtime \
+		--enable-debug-symbols --enable-targets=x86,cpp \
+		--enable-libffi --enable-shared --disable-embed-stdcxx \
+		--disable-polly --disable-libcpp --enable-bindings=none
+
+	cygmake libs-only REQUIRES_RTTI=1
+}
+
+src_install() {
+	cd ${B}
+	cygmake install-libs DESTDIR=${D} ENABLE_DOCS=0
+
+	case ${VERSION} in
+	*.*.*)	rm -f ${D}/usr/bin/cygLLVM-${VERSION}.dll
+		dosym libLLVM-${VERSION%.*}.dll.a /usr/lib/libLLVM-${VERSION}.dll.a
+	esac
+
+	# avoid conflicts with latest llvm packages
+	rm -f ${D}/usr/bin/{FileCheck,count,not}.exe
+	mv ${D}/usr/bin/llvm-config{,-3.5}.exe
+	mv ${D}/usr/bin/llvm-tblgen{,-3.5}.exe
+	rm -f ${D}/usr/lib/libLLVM[^-]*.a
+	rm -fr ${D}/usr/share/llvm/cmake/
+}
